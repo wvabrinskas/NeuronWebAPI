@@ -7,7 +7,7 @@ let package = Package(
        .macOS(.v10_15)
     ],
     dependencies: [
-        // 💧 A server-side Swift web framework.
+        .package(name:"Neuron", url: "https://github.com/wvabrinskas/neuron.git", from: "1.0.3"),
         .package(url: "https://github.com/vapor/vapor.git", from: "4.0.0"),
         .package(url: "https://github.com/vapor/leaf.git", from: "4.0.0"),
     ],
@@ -16,7 +16,8 @@ let package = Package(
             name: "App",
             dependencies: [
                 .product(name: "Leaf", package: "leaf"),
-                .product(name: "Vapor", package: "vapor")
+                .product(name: "Vapor", package: "vapor"),
+                "Neuron"
             ],
             swiftSettings: [
                 // Enable better optimizations when building in Release configuration. Despite the use of
