@@ -15,10 +15,10 @@ func routes(_ app: Application) throws {
     return requestCoordinator.initialize(req)
   }
   
-  app.post("train") { req -> ResponseModel<String?> in
+  app.on(.POST,"train", body: .collect(maxSize: "1mb")) { req -> ResponseModel<String?> in
     return requestCoordinator.train(req)
   }
-  
+
   app.post("get") { (req) -> EventLoopFuture<ResponseModel<[Float]>> in
     return requestCoordinator.get(req)
   }

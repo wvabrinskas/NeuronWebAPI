@@ -34,24 +34,12 @@ public class NeuroCoordinator: ObservableObject {
   }
   
   public func get(inputs: [Float], complete: ((_ result: [Float]) -> ())? = nil) {
-    self.result = []
-    DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-      guard let strongSelf = self else {
-        return
-      }
-      
-      strongSelf.result = strongSelf.brain.feed(input: inputs)
-      
-      complete?(strongSelf.result)
-    }
+    self.result = self.brain.feed(input: inputs)
+    complete?(self.result)
   }
   
   public func train(inputs: [Float], correct: [Float]) {
-    DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-      for _ in 0..<10 {
-        self?.brain.train(data: inputs, correct: correct)
-      }
-    }
+    self.brain.train(data: inputs, correct: correct)
   }
 }
 

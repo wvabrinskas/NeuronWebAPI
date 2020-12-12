@@ -55,8 +55,14 @@ public class RequestCoordinator {
     }
     
     do {
-      let trainingModel = try req.content.decode(TrainingModel.self)
-      neuro?.train(inputs: trainingModel.inputs, correct: trainingModel.correct)
+      let trainingModel = try req.content.decode(MasterTrainingModel.self)
+      
+      for _ in 0..<trainingModel.count {
+        let models = trainingModel.trainingData
+        for model in models {
+          neuro?.train(inputs: model.inputs, correct: model.correct)
+        }
+      }
       
       print("training....")
       
