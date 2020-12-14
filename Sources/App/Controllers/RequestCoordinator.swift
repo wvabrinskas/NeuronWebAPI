@@ -35,11 +35,15 @@ public class RequestCoordinator {
         return ResponseModel(status: false, error: .requestModelError , result: nil)
       }
       
+      print("initializing....")
+      
       neuro = NeuroCoordinator(inputs: reqModel.inputs,
                                outputs: reqModel.outputs,
                                hiddenLayers: reqModel.hiddenLayers ?? 0,
                                learningRate: reqModel.learningRate,
                                bias: reqModel.bias)
+      
+      print("initialized.")
       
       return ResponseModel(status: true, result: "successfully init neuro coordinator")
     }
@@ -56,7 +60,8 @@ public class RequestCoordinator {
     
     do {
       let trainingModel = try req.content.decode(MasterTrainingModel.self)
-      
+      print("training...")
+
       for _ in 0..<trainingModel.count {
         let models = trainingModel.trainingData
         for model in models {
@@ -64,7 +69,7 @@ public class RequestCoordinator {
         }
       }
       
-      print("training....")
+      print("training complete.")
       
       return ResponseModel(status: true, result: "successfully initialized training....")
       
@@ -98,5 +103,5 @@ public class RequestCoordinator {
         
     return promise.futureResult
   }
-  
+
 }

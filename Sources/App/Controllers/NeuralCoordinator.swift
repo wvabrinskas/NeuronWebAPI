@@ -15,16 +15,31 @@ public class NeuroCoordinator: ObservableObject {
   public var inputs: Int
   private var brain: Brain
   
+  private static func getActivation(_ mode: ActivationMode) -> Activation {
+    switch mode {
+    case .reLu:
+      return .reLu
+    case .leakyReLu:
+      return .leakyRelu
+    case .sigmoid:
+      return .sigmoid
+    }
+  }
+  
   init(inputs: Int,
        outputs: Int,
        hiddenLayers: Int = 0,
        learningRate: Float = 0.01,
-       bias: Float = 0.01) {
+       bias: Float = 0.01,
+       activation: ActivationMode = .reLu) {
     
     self.inputs = inputs
     self.outputs = outputs
     
-    let nucleus = Nucleus(learningRate: learningRate, bias: bias, activationType: .reLu)
+    let nucleus = Nucleus(learningRate: learningRate,
+                          bias: bias,
+                          activationType: Self.getActivation(activation))
+    
     let brain = Brain(inputs: inputs,
                       outputs: outputs,
                       hidden: (inputs + outputs) / 2,
@@ -41,5 +56,6 @@ public class NeuroCoordinator: ObservableObject {
   public func train(inputs: [Float], correct: [Float]) {
     self.brain.train(data: inputs, correct: correct)
   }
+
 }
 
