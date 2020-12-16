@@ -51,13 +51,19 @@ public class RequestCoordinator {
     return ResponseModel(status: false, error: .alreadyInitError, result: nil)
   }
   
-  public func train(_ req: Request) -> ResponseModel<String?> {
+  public func train(_ req: Request) -> EventLoopFuture<ResponseModel<String?>> {
+    
+    let promise = req.eventLoop.makePromise(of: ResponseModel<String?>.self)
+
     guard neuro != nil else {
-      return ResponseModel(status: false,
-                           error: .initError,
-                           result: nil)
+      let model: ResponseModel<String?> = ResponseModel(status: false,
+                                                        error: .initError,
+                                                        result: nil)
+      promise.succeed(model)
+      return promise.futureResult
     }
     
+
     do {
       let trainingModel = try req.content.decode(MasterTrainingModel.self)
       print("training...")
@@ -71,11 +77,13 @@ public class RequestCoordinator {
       
       print("training complete.")
       
-      return ResponseModel(status: true, result: "successfully initialized training....")
+      promise.succeed(ResponseModel(status: true, result: "successfully initialized training...."))
       
     } catch {
-      return ResponseModel(status: false, error: .trainingModelError, result: nil)
+      promise.succeed(ResponseModel(status: false, error: .trainingModelError, result: nil))
     }
+    
+    return promise.futureResult
   }
   
   public func get(_ req: Request) -> EventLoopFuture<ResponseModel<[Float]>> {
