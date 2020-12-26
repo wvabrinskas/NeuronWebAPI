@@ -8,7 +8,11 @@
 import Foundation
 
 public enum ActivationMode: String, Codable {
-  case reLu, sigmoid, leakyReLu
+  case reLu, sigmoid, leakyReLu, swish
+}
+
+public enum LossFunctionMode: String, Codable {
+  case meanSquareLoss
 }
 
 struct InitModel: Codable {
@@ -18,4 +22,6 @@ struct InitModel: Codable {
   var learningRate: Float
   var bias: Float
   var activation: ActivationMode
+  var lossFunction: LossFunctionMode
+  var lossThreshold: Float
 }

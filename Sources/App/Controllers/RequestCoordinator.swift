@@ -20,19 +20,22 @@ public class RequestCoordinator {
     case getResultError = "Could not retrieve data from neural network"
   }
   
-  public func initialize(_ req: Request) -> ResponseModel<String?> {
+  public func initialize(_ req: Request) -> EventLoopFuture<ResponseModel<String?>> {
+    let promise = req.eventLoop.makePromise(of: ResponseModel<String?>.self)
+
     var requestModel: InitModel?
     
     do {
       requestModel = try req.content.decode(InitModel.self)
     } catch {
       print(error)
-      return ResponseModel(status: false, error: .requestModelError, result: nil)
+      promise.succeed(ResponseModel(status: false, error: .requestModelError, result: nil))
+      return promise.futureResult
     }
     
     if neuro == nil {
       guard let reqModel = requestModel else {
-        return ResponseModel(status: false, error: .requestModelError , result: nil)
+        promise.succeed(ResponseModel(status: false, error: .requestModelError , result: nil))
       }
       
       print("initializing....")
@@ -41,49 +44,64 @@ public class RequestCoordinator {
                                outputs: reqModel.outputs,
                                hiddenLayers: reqModel.hiddenLayers ?? 0,
                                learningRate: reqModel.learningRate,
-                               bias: reqModel.bias)
+                               bias: reqModel.bias,
+                               lossFunction: reqModel.lossFunction,
+                               lossThreshold: reqModel.lossThreshold)
       
       print("initialized.")
       
-      return ResponseModel(status: true, result: "successfully init neuro coordinator")
+      promise.succeed(ResponseModel(status: true, result: "successfully init neuro coordinator"))
+    } else {
+      promise.succeed(ResponseModel(status: false, error: .alreadyInitError, result: nil))
     }
     
-    return ResponseModel(status: false, error: .alreadyInitError, result: nil)
+    return promise.futureResult
   }
   
-  public func train(_ req: Request) -> EventLoopFuture<ResponseModel<String?>> {
+  public func train(_ req: Request) -> ResponseModel<String?> {
     
-    let promise = req.eventLoop.makePromise(of: ResponseModel<String?>.self)
-
     guard neuro != nil else {
       let model: ResponseModel<String?> = ResponseModel(status: false,
                                                         error: .initError,
                                                         result: nil)
-      promise.succeed(model)
-      return promise.futureResult
+      return model
     }
     
 
     do {
       let trainingModel = try req.content.decode(MasterTrainingModel.self)
-      print("training...")
+      
+      DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+        print("training...")
+        
+        var finishedTraining = false
+        var i = 0
+        
+        while i < trainingModel.count && !finishedTraining {
+          let models = trainingModel.trainingData
+          var j = 0
+          print("iteration: \(i)")
 
-      for _ in 0..<trainingModel.count {
-        let models = trainingModel.trainingData
-        for model in models {
-          neuro?.train(inputs: model.inputs, correct: model.correct)
+          for model in models {
+            print("epoch: \(j)")
+            self?.neuro?.train(inputs: model.inputs, correct: model.correct, complete: { (finished) in
+              finishedTraining = finished
+            })
+            j += 1
+          }
+          
+          i += 1
         }
+        
+        print("training complete.")
       }
-      
-      print("training complete.")
-      
-      promise.succeed(ResponseModel(status: true, result: "successfully initialized training...."))
+
+      return ResponseModel(status: true, result: "successfully initialized training....")
       
     } catch {
-      promise.succeed(ResponseModel(status: false, error: .trainingModelError, result: nil))
+      return ResponseModel(status: false, error: .trainingModelError, result: nil)
     }
-    
-    return promise.futureResult
+  
   }
   
   public func get(_ req: Request) -> EventLoopFuture<ResponseModel<[Float]>> {

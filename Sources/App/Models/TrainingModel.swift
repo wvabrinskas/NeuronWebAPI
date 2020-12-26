@@ -9,6 +9,7 @@ import Foundation
 
 struct TrainingModel: Codable {
   var inputs: [Float]
+  var validation: [Float]
   var correct: [Float]
 }
 

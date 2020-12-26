@@ -7,7 +7,7 @@ let package = Package(
        .macOS(.v10_15)
     ],
     dependencies: [
-        .package(name:"Neuron", url: "https://github.com/wvabrinskas/neuron.git", from: "1.0.3"),
+        .package(name:"Neuron", url: "https://github.com/wvabrinskas/neuron.git", .branch("optim4")),
         .package(url: "https://github.com/vapor/vapor.git", from: "4.0.0"),
         .package(url: "https://github.com/vapor/leaf.git", from: "4.0.0"),
     ],

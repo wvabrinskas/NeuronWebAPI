@@ -23,6 +23,15 @@ public class NeuroCoordinator: ObservableObject {
       return .leakyRelu
     case .sigmoid:
       return .sigmoid
+    case .swish:
+      return .swish
+    }
+  }
+  
+  private static func getLossFunction(_ mode: LossFunctionMode) -> LossFunction {
+    switch mode {
+    case .meanSquareLoss:
+      return .meanSquareError
     }
   }
   
@@ -31,7 +40,9 @@ public class NeuroCoordinator: ObservableObject {
        hiddenLayers: Int = 0,
        learningRate: Float = 0.01,
        bias: Float = 0.01,
-       activation: ActivationMode = .reLu) {
+       activation: ActivationMode = .reLu,
+       lossFunction: LossFunctionMode = .meanSquareLoss,
+       lossThreshold: Float = 0.001) {
     
     self.inputs = inputs
     self.outputs = outputs
@@ -44,7 +55,9 @@ public class NeuroCoordinator: ObservableObject {
                       outputs: outputs,
                       hidden: (inputs + outputs) / 2,
                       hiddenLayers: hiddenLayers,
-                      nucleus: nucleus)
+                      nucleus: nucleus,
+                      lossFunction: Self.getLossFunction(lossFunction),
+                      lossThreshold: lossThreshold)
     self.brain = brain
   }
   
@@ -53,8 +66,8 @@ public class NeuroCoordinator: ObservableObject {
     complete?(self.result)
   }
   
-  public func train(inputs: [Float], correct: [Float]) {
-    self.brain.train(data: inputs, correct: correct)
+  public func train(inputs: [Float], correct: [Float], complete: ((_ finished: Bool) -> ())? = nil) {
+    self.brain.train(data: inputs, correct: correct, complete: complete)
   }
 
 }
