@@ -8,6 +8,7 @@ let package = Package(
     ],
     dependencies: [
         .package(name:"Neuron", url: "https://github.com/wvabrinskas/neuron.git", .branch("optim4")),
+      .package(name:"NeuronWebAPISDK", url: "git@github.com:wvabrinskas/NeuronWebAPISDK.git", .branch("master")),
         .package(url: "https://github.com/vapor/vapor.git", from: "4.0.0"),
         .package(url: "https://github.com/vapor/leaf.git", from: "4.0.0"),
     ],
@@ -17,7 +18,8 @@ let package = Package(
             dependencies: [
                 .product(name: "Leaf", package: "leaf"),
                 .product(name: "Vapor", package: "vapor"),
-                "Neuron"
+                "Neuron",
+                "NeuronWebAPISDK"
             ],
             swiftSettings: [
                 // Enable better optimizations when building in Release configuration. Despite the use of

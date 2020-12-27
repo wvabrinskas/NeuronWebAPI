@@ -7,6 +7,7 @@
 
 import Foundation
 import Vapor
+import NeuronWebAPISDK
 
 public class RequestCoordinator {
   private var neuro: NeuroCoordinator?
@@ -20,8 +21,8 @@ public class RequestCoordinator {
     case getResultError = "Could not retrieve data from neural network"
   }
   
-  public func initialize(_ req: Request) -> EventLoopFuture<ResponseModel<String?>> {
-    let promise = req.eventLoop.makePromise(of: ResponseModel<String?>.self)
+  public func initialize(_ req: Request) -> EventLoopFuture<WebResponseModel<String?>> {
+    let promise = req.eventLoop.makePromise(of: WebResponseModel<String?>.self)
 
     var requestModel: InitModel?
     
@@ -29,39 +30,42 @@ public class RequestCoordinator {
       requestModel = try req.content.decode(InitModel.self)
     } catch {
       print(error)
-      promise.succeed(ResponseModel(status: false, error: .requestModelError, result: nil))
+      promise.succeed(WebResponseModel(status: false, error: .requestModelError, result: nil))
       return promise.futureResult
     }
     
     if neuro == nil {
       guard let reqModel = requestModel else {
-        promise.succeed(ResponseModel(status: false, error: .requestModelError , result: nil))
+        promise.succeed(WebResponseModel(status: false, error: .requestModelError , result: nil))
+        return promise.futureResult
       }
       
       print("initializing....")
       
-      neuro = NeuroCoordinator(inputs: reqModel.inputs,
-                               outputs: reqModel.outputs,
-                               hiddenLayers: reqModel.hiddenLayers ?? 0,
+      neuro = NeuroCoordinator(layers: reqModel.layers,
                                learningRate: reqModel.learningRate,
                                bias: reqModel.bias,
+                               epochs: reqModel.epochs,
+                               defaultActivation: .swish,
                                lossFunction: reqModel.lossFunction,
-                               lossThreshold: reqModel.lossThreshold)
+                               lossThreshold: reqModel.lossThreshold,
+                               modifier: reqModel.modifier)
+      
       
       print("initialized.")
       
-      promise.succeed(ResponseModel(status: true, result: "successfully init neuro coordinator"))
+      promise.succeed(WebResponseModel(status: true, result: "successfully init neuro coordinator"))
     } else {
-      promise.succeed(ResponseModel(status: false, error: .alreadyInitError, result: nil))
+      promise.succeed(WebResponseModel(status: false, error: .alreadyInitError, result: nil))
     }
     
     return promise.futureResult
   }
   
-  public func train(_ req: Request) -> ResponseModel<String?> {
+  public func train(_ req: Request) -> WebResponseModel<String?> {
     
     guard neuro != nil else {
-      let model: ResponseModel<String?> = ResponseModel(status: false,
+      let model: WebResponseModel<String?> = WebResponseModel(status: false,
                                                         error: .initError,
                                                         result: nil)
       return model
@@ -71,45 +75,28 @@ public class RequestCoordinator {
     do {
       let trainingModel = try req.content.decode(MasterTrainingModel.self)
       
-      DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-        print("training...")
-        
-        var finishedTraining = false
-        var i = 0
-        
-        while i < trainingModel.count && !finishedTraining {
-          let models = trainingModel.trainingData
-          var j = 0
-          print("iteration: \(i)")
+      DispatchQueue.global().async {
+        self.neuro?.train(inputs: trainingModel.trainingData,
+                          validation: trainingModel.validationData, complete: { (complete) in
+          print("done training...")
+        })
 
-          for model in models {
-            print("epoch: \(j)")
-            self?.neuro?.train(inputs: model.inputs, correct: model.correct, complete: { (finished) in
-              finishedTraining = finished
-            })
-            j += 1
-          }
-          
-          i += 1
-        }
-        
-        print("training complete.")
       }
 
-      return ResponseModel(status: true, result: "successfully initialized training....")
+      return WebResponseModel(status: true, result: "successfully initialized training....")
       
     } catch {
-      return ResponseModel(status: false, error: .trainingModelError, result: nil)
+      return WebResponseModel(status: false, error: .trainingModelError, result: nil)
     }
   
   }
   
-  public func get(_ req: Request) -> EventLoopFuture<ResponseModel<[Float]>> {
+  public func get(_ req: Request) -> EventLoopFuture<WebResponseModel<[Float]>> {
     
-    let promise = req.eventLoop.makePromise(of: ResponseModel<[Float]>.self)
+    let promise = req.eventLoop.makePromise(of: WebResponseModel<[Float]>.self)
     
     guard self.neuro != nil else {
-      promise.succeed(ResponseModel(status: false,
+      promise.succeed(WebResponseModel(status: false,
                            error: .initError,
                            result: nil))
       return promise.futureResult
@@ -120,11 +107,11 @@ public class RequestCoordinator {
       
       self.neuro?.get(inputs: feedModel.inputs, complete: { (result) in
         print("got result \(result)")
-        promise.succeed(ResponseModel(status: true, result: result))
+        promise.succeed(WebResponseModel(status: true, result: result))
       })
       
     } catch {
-      promise.succeed(ResponseModel(status: false, error: .feedModelError, result: []))
+      promise.succeed(WebResponseModel(status: false, error: .feedModelError, result: []))
     }
         
     return promise.futureResult

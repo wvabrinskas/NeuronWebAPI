@@ -51,7 +51,16 @@
         "repositoryURL": "https://github.com/wvabrinskas/neuron.git",
         "state": {
           "branch": "optim4",
-          "revision": "243f87cbbdb6224195cbb9762c1d042887a8524b",
+          "revision": "7260f5d489a97ace8df1fec6fd412eac4c7cf18b",
+          "version": null
+        }
+      },
+      {
+        "package": "NeuronWebAPISDK",
+        "repositoryURL": "git@github.com:wvabrinskas/NeuronWebAPISDK.git",
+        "state": {
+          "branch": "master",
+          "revision": "15d4c1813863d80e5c2ee9b390d2332ddbb3217b",
           "version": null
         }
       },
@@ -62,6 +71,15 @@
           "branch": null,
           "revision": "4cf052b78aebaf1b23f2264ce04d57b4b6eb5254",
           "version": "4.2.0"
+        }
+      },
+      {
+        "package": "SimpleApiClient",
+        "repositoryURL": "https://github.com/wvabrinskas/SimpleAPIClient.git",
+        "state": {
+          "branch": null,
+          "revision": "e492f3a586c26a6e958fa746b8da62a71a7da9f2",
+          "version": "1.0.11"
         }
       },
       {

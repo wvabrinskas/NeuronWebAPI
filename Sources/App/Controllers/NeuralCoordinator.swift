@@ -7,12 +7,11 @@
 
 import Foundation
 import Neuron
+import NeuronWebAPISDK
 
 public class NeuroCoordinator: ObservableObject {
   @Published public var result: [Float] = []
-  
-  public var outputs: Int
-  public var inputs: Int
+
   private var brain: Brain
   
   private static func getActivation(_ mode: ActivationMode) -> Activation {
@@ -25,6 +24,8 @@ public class NeuroCoordinator: ObservableObject {
       return .sigmoid
     case .swish:
       return .swish
+    case .none:
+      return .none
     }
   }
   
@@ -35,29 +36,42 @@ public class NeuroCoordinator: ObservableObject {
     }
   }
   
-  init(inputs: Int,
-       outputs: Int,
-       hiddenLayers: Int = 0,
+  private static func getModifier(_ mode: ModifierMode) -> OutputModifier {
+    switch mode {
+    case .softmax:
+      return .softmax
+    }
+  }
+  
+  init(layers: [Layer],
        learningRate: Float = 0.01,
        bias: Float = 0.01,
-       activation: ActivationMode = .reLu,
+       epochs: Int,
+       defaultActivation: ActivationMode = .reLu,
        lossFunction: LossFunctionMode = .meanSquareLoss,
-       lossThreshold: Float = 0.001) {
-    
-    self.inputs = inputs
-    self.outputs = outputs
+       lossThreshold: Float = 0.0005,
+       modifier: ModifierMode? = nil) {
     
     let nucleus = Nucleus(learningRate: learningRate,
                           bias: bias,
-                          activationType: Self.getActivation(activation))
+                          activationType: Self.getActivation(defaultActivation))
     
-    let brain = Brain(inputs: inputs,
-                      outputs: outputs,
-                      hidden: (inputs + outputs) / 2,
-                      hiddenLayers: hiddenLayers,
-                      nucleus: nucleus,
+    
+    let brain = Brain(nucleus: nucleus,
+                      epochs: epochs,
                       lossFunction: Self.getLossFunction(lossFunction),
                       lossThreshold: lossThreshold)
+    
+    layers.forEach { (layer) in
+      brain.add(.layer(layer.nodes, Self.getActivation(layer.activation)))
+    }
+    
+    if let modifier = modifier {
+      brain.add(modifier: Self.getModifier(modifier))
+    }
+
+    brain.compile()
+    
     self.brain = brain
   }
   
@@ -66,8 +80,14 @@ public class NeuroCoordinator: ObservableObject {
     complete?(self.result)
   }
   
-  public func train(inputs: [Float], correct: [Float], complete: ((_ finished: Bool) -> ())? = nil) {
-    self.brain.train(data: inputs, correct: correct, complete: complete)
+  public func train(inputs: [TrainingModel],
+                    validation: [TrainingModel] = [],
+                    complete: ((_ finished: Bool) -> ())? = nil) {
+    
+    let newInputs = inputs.map({ TrainingData(data: $0.inputs, correct: $0.correct) })
+    let newValidation = validation.map({ TrainingData(data: $0.inputs, correct: $0.correct) })
+    
+    self.brain.train(data: newInputs, validation: newValidation, complete: complete)
   }
 
 }

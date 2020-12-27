@@ -2,13 +2,13 @@
 //  File.swift
 //  
 //
-//  Created by William Vabrinskas on 12/12/20.
+//  Created by William Vabrinskas on 12/27/20.
 //
 
 import Foundation
 import Vapor
 
-public struct ResponseModel<T: Codable>: Codable, ResponseEncodable {
+public struct WebResponseModel<T: Codable>: Codable, ResponseEncodable {
   public var status: Bool
   public var error: RequestCoordinator.RequestError? = nil
   public var result: T?
